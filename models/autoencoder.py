@@ -149,7 +149,7 @@ class Autoencoder(pl.LightningModule):
                                   list(self.post_quant_conv.parameters()),
                                   lr=lr, betas=(0.5, 0.9))
 
-        if self.lr_scheduler is not None:
+        if self.lr_scheduler != "None":
             raise NotImplementedError(
                 "Learning rate scheduler not implemented")
 

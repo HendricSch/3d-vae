@@ -2,9 +2,10 @@ import yaml
 
 import torch
 from tqdm import tqdm
-from lightning.pytorch.utilities.model_summary import ModelSummary
+import lightning as pl
 
 from models.autoencoder import Autoencoder
+from data.dummy_data import DummyDataModule
 
 
 def main():
@@ -17,60 +18,16 @@ def main():
     with open("configs/autoencoder_kl_f8.yaml", "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
-    autoencoder = Autoencoder(config).to(device)
+    autoencoder = Autoencoder(config)
 
-    # Print the model summary
-    model_summary = ModelSummary(autoencoder, max_depth=2)
-    print(model_summary)
+    # Load the data module
+    data_module = DummyDataModule(config, 100000)
 
-    # dummy input
-    x = torch.zeros(
-        config["config"]["training"]["batch_size"],
-        config["config"]["data"]["in_channels"],
-        config["config"]["data"]["x"],
-        config["config"]["data"]["y"],
-        device=device
-    )
+    # Test Train
 
-    rec, posterior = autoencoder.forward(x)
-    z = posterior.sample()
+    trainer = pl.Trainer()
 
-    loss = autoencoder.loss(x, rec, posterior)
-
-    print("-------------------")
-    print(f"Input shape: {x.shape}")
-    print(f"Reconstruction shape: {rec.shape}")
-    print(f"Latent shape: {z.shape}")
-    print(f"Loss: {loss}")
-    print("-------------------")
-
-    del x, rec, z, loss
-
-    # test loop
-
-    for _ in tqdm(range(100)):
-        x = torch.randn(
-            config["config"]["training"]["batch_size"],
-            config["config"]["data"]["in_channels"],
-            config["config"]["data"]["x"],
-            config["config"]["data"]["y"],
-            device=device
-        )
-
-        rec, posterior = autoencoder.forward(x)
-        z = posterior.sample()
-
-        loss_rec, loss_kl = autoencoder.loss(x, rec, posterior)
-
-        loss = loss_rec + loss_kl
-
-        loss.backward()
-
-        print(f"Loss: {loss}")
-
-        del x, rec, z, loss
-
-    print("Done!")
+    trainer.fit(autoencoder, data_module)
 
 
 if __name__ == '__main__':
