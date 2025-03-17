@@ -1,7 +1,6 @@
 import yaml
 
 import torch
-from tqdm import tqdm
 import lightning as pl
 
 from models.autoencoder import Autoencoder
