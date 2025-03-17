@@ -17,7 +17,7 @@ def main():
     autoencoder = Autoencoder(config)
 
     trainer = lightning.Trainer(
-        max_epochs=config["config"]["training"]["max_epochs"],
+        max_epochs=config["config"]["training"]["epochs"],
         precision="16-mixed",
     )
 

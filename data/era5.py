@@ -7,39 +7,46 @@ from torchvision.transforms import Normalize
 import lightning as pl
 
 
+def gen_bgen(train: bool) -> xb.BatchGenerator:
+
+    TIME_START_TRAIN = "1940-01-01"
+    TIME_STOP_TRAIN = "2022-12-31"
+    TIME_START_VAL = "2023-01-01"
+    TIME_STOP_VAL = "2024-12-31"
+
+    LEVEL = [50, 100, 150, 200, 250, 300,
+             400, 500, 600, 700, 850, 925, 1000]
+    VARS_SURFACE = ["2m_temperature", "10m_u_component_of_wind",
+                    "10m_v_component_of_wind", "mean_sea_level_pressure"]
+    VARS_ATMOSPHERE = ["temperature", "u_component_of_wind",
+                       "v_component_of_wind", "geopotential", "specific_humidity"]
+
+    ds = xr.open_zarr('gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3',
+                      chunks=None, storage_options=dict(token='anon'),)
+
+    if train:
+        ds = ds.sel(time=slice(TIME_START_TRAIN,
+                               TIME_STOP_TRAIN))  # 1940-2022
+    else:
+        ds = ds.sel(time=slice(TIME_START_VAL, TIME_STOP_VAL))  # 2023-2024
+
+    ds = ds.sel(level=LEVEL)
+    ds = ds[VARS_SURFACE + VARS_ATMOSPHERE]
+
+    bgen = xb.BatchGenerator(
+        ds, input_dims={"time": 1, "level": 13, "latitude": 721, "longitude": 1440})
+
+    return bgen
+
+
 class ERA5Dataset(torch.utils.data.Dataset):
 
-    def __init__(self, train: bool):
+    def __init__(self, bgen: xb.BatchGenerator):
         super().__init__()
 
+        self.bgen = bgen
+
         dask.config.set(scheduler="threads", num_workers=4)
-
-        TIME_START_TRAIN = "1940-01-01"
-        TIME_STOP_TRAIN = "2022-12-31"
-        TIME_START_VAL = "2023-01-01"
-        TIME_STOP_VAL = "2024-12-31"
-
-        LEVEL = [50, 100, 150, 200, 250, 300,
-                 400, 500, 600, 700, 850, 925, 1000]
-        VARS_SURFACE = ["2m_temperature", "10m_u_component_of_wind",
-                        "10m_v_component_of_wind", "mean_sea_level_pressure"]
-        VARS_ATMOSPHERE = ["temperature", "u_component_of_wind",
-                           "v_component_of_wind", "geopotential", "specific_humidity"]
-
-        ds = xr.open_zarr('gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3',
-                          chunks=None, storage_options=dict(token='anon'),)
-
-        if train:
-            ds = ds.sel(time=slice(TIME_START_TRAIN,
-                        TIME_STOP_TRAIN))  # 1940-2022
-        else:
-            ds = ds.sel(time=slice(TIME_START_VAL, TIME_STOP_VAL))  # 2023-2024
-
-        ds = ds.sel(level=LEVEL)
-        ds = ds[VARS_SURFACE + VARS_ATMOSPHERE]
-
-        self.bgen = xb.BatchGenerator(
-            ds, input_dims={"time": 1, "level": 13, "latitude": 721, "longitude": 1440})
 
         mean = np.array([2.76707305e+02, -1.02550652e-01, -8.24716593e-02,  1.01068682e+05,
                          2.13901834e+02,  2.09669021e+02,  2.14224057e+02,  2.18012186e+02,
@@ -112,8 +119,11 @@ class ERA5DataModule(pl.LightningDataModule):
 
         self.config = config
 
-        self.train_ds = ERA5Dataset(train=True)
-        self.val_ds = ERA5Dataset(train=False)
+        bgen_train = gen_bgen(train=True)
+        bgen_val = gen_bgen(train=False)
+
+        self.train_ds = ERA5Dataset(bgen=bgen_train)
+        self.val_ds = ERA5Dataset(bgen=bgen_val)
 
     def train_dataloader(self):
         return torch.utils.data.DataLoader(
@@ -122,6 +132,7 @@ class ERA5DataModule(pl.LightningDataModule):
             shuffle=True,
             num_workers=self.config["config"]["dataloader"]["num_workers"],
             persistent_workers=True,
+            multiprocessing_context="spawn"
         )
 
     def val_dataloader(self):
@@ -131,6 +142,7 @@ class ERA5DataModule(pl.LightningDataModule):
             shuffle=False,
             num_workers=self.config["config"]["dataloader"]["num_workers"],
             persistent_workers=True,
+            multiprocessing_context="spawn"
         )
 
 
