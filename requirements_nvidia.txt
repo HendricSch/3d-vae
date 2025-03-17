@@ -6,3 +6,8 @@ torchvision
 torchaudio
 lightning
 ipykernel
+dask
+xarray
+xbatcher
+zarr
+gcsfs

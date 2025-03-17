@@ -1,6 +1,12 @@
 numpy
-ipykernel
 matplotlib
-torch 
+torch
 torchvision
+torchaudio
 lightning
+ipykernel
+dask
+xarray
+xbatcher
+zarr
+gcsfs
