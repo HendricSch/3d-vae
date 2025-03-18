@@ -12,7 +12,7 @@ def main():
         config = yaml.load(f, Loader=yaml.FullLoader)
 
     model = Autoencoder.load_from_checkpoint(
-        "checkpoints/vae-kl-f8-1440x720-69c-step=3000.ckpt")
+        "checkpoints/vae-kl-f8-1440x720-69c-step=23400.ckpt")
 
     model.eval()
 
