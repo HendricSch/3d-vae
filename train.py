@@ -10,6 +10,8 @@ from models.autoencoder import Autoencoder
 
 def main():
 
+    torch.set_float32_matmul_precision("medium")
+
     with open("configs/autoencoder_kl_f8.yaml", "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
@@ -31,7 +33,6 @@ def main():
         precision="16-mixed",
         callbacks=[checkpoint_callback, lr_finder],
         accumulate_grad_batches=4,
-
     )
 
     trainer.fit(autoencoder, datamodule=data)
