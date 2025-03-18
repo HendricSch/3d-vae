@@ -1,0 +1,14 @@
+numpy
+matplotlib
+--extra-index-url https://storage.googleapis.com/libtpu-releases/index.html
+torch
+torch_xla[tpu]~=2.6.0
+torchvision
+torchaudio
+lightning
+ipykernel
+dask
+xarray
+xbatcher
+zarr
+gcsfs
