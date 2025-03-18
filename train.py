@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import lightning
-from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateFinder
+from lightning.pytorch.callbacks import ModelCheckpoint
 import yaml
 
 from data.era5 import ERA5DataModule
@@ -26,13 +26,10 @@ def main():
 
     )
 
-    lr_finder = LearningRateFinder(mode="linear")
-
     trainer = lightning.Trainer(
         max_epochs=config["config"]["training"]["epochs"],
         precision="16-mixed",
-        callbacks=[checkpoint_callback, lr_finder],
-        accumulate_grad_batches=4,
+        callbacks=[checkpoint_callback],
     )
 
     trainer.fit(autoencoder, datamodule=data)
