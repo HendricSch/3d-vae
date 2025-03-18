@@ -1,4 +1,8 @@
 config:
+
+  general:
+    name: vae-kl-f8-1440x720-69c
+
   data:
     x: 1440 # 1440
     y: 720 # 720
