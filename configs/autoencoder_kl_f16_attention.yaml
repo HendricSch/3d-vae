@@ -1,0 +1,33 @@
+config:
+
+  general:
+    name: vae-kl-f16-1440x720-69c-attention-
+
+  data:
+    x: 1440 # 1440
+    y: 720 # 720
+    in_channels: 69       # 4 + 5 * 13 = (Surface + Atmospheric * Levels) = 69 Channel
+    out_channels: 69
+
+  dataloader:
+    num_workers: 48
+
+  model:
+    z_channels: 64
+    embed_dim: 64
+    channels: 128
+    channel_mult: [1, 2, 4, 4, 6]
+    num_res_blocks: 2
+    norm_groups: 32
+    attention: True
+    num_heads: 4
+
+  loss:
+    reconstruction_loss: l1
+    kl_weight: 0.000001
+
+  training:
+    learning_rate: 0.0000045
+    epochs: 10
+    batch_size: 1
+    lr_scheduler: None

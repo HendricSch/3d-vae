@@ -12,7 +12,7 @@ def main():
 
     torch.set_float32_matmul_precision("medium")
 
-    with open("configs/autoencoder_kl_f16.yaml", "r") as f:
+    with open("configs/autoencoder_kl_f16_attention.yaml", "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
     data = ERA5DataModule(config)
@@ -22,7 +22,7 @@ def main():
     checkpoint_callback = ModelCheckpoint(
         dirpath="checkpoints/",
         filename=config["config"]["general"]["name"] + "-{step}",
-        every_n_train_steps=100,
+        every_n_train_steps=500,
 
     )
 
@@ -30,6 +30,9 @@ def main():
         max_epochs=config["config"]["training"]["epochs"],
         precision="16-mixed",
         callbacks=[checkpoint_callback],
+        accelerator="gpu",
+        devices=4,
+        strategy="ddp"
     )
 
     trainer.fit(autoencoder, datamodule=data)
