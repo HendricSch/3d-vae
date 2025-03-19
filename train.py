@@ -12,7 +12,7 @@ def main():
 
     torch.set_float32_matmul_precision("medium")
 
-    with open("configs/autoencoder_kl_f8.yaml", "r") as f:
+    with open("configs/autoencoder_kl_f16.yaml", "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
     data = ERA5DataModule(config)
