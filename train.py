@@ -28,11 +28,10 @@ def main():
 
     trainer = lightning.Trainer(
         max_epochs=config["config"]["training"]["epochs"],
-        precision="16-mixed",
+        precision="bf16-true",
         callbacks=[checkpoint_callback],
-        accelerator="gpu",
-        devices=4,
-        strategy="ddp"
+        accelerator="tpu",
+        devices="auto",
     )
 
     trainer.fit(autoencoder, datamodule=data)
