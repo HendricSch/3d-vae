@@ -6,6 +6,8 @@ from models.blocks.decoder import Decoder
 
 from models.blocks.distributions import DiagonalGaussianDistribution
 
+from metrics.metrics import WeightedRMSE
+
 
 class Autoencoder(pl.LightningModule):
     def __init__(self, config: dict):
@@ -32,6 +34,7 @@ class Autoencoder(pl.LightningModule):
         # loss
         self.reconstruction_loss_fn = self.config["loss"]["reconstruction_loss"]
         self.kl_weight = self.config["loss"]["kl_weight"]
+        self.weighted_rmse = WeightedRMSE(num_latitudes=720)
 
         # training
         self.learning_rate = self.config["training"]["learning_rate"]
@@ -135,7 +138,28 @@ class Autoencoder(pl.LightningModule):
 
         loss = rec_loss + kl_loss
 
-        self.log("val/rec_loss", rec_loss)
+        # rmse for z500
+
+        # input = (1, 69, 1440, 720) torch.Tensor
+
+        z500_truth = inputs[:, 50, :, :]
+        z500_pred = rec[:, 50, :, :]
+
+        z500_mean, z500_std = 53921.2137, 3091.97738
+
+        z_500_truth = (z500_truth * z500_std) + z500_mean
+        z_500_pred = (z500_pred * z500_std) + z500_mean
+
+        z_500_truth = z_500_truth.detach().cpu().numpy()
+        z_500_pred = z_500_pred.detach().cpu().numpy()
+
+        rmse = self.weighted_rmse(z_500_truth, z_500_pred)[0]
+        rmse = float(rmse)
+
+        # self.log("val/rec_loss", rec_loss)
+
+        self.log_dict(
+            {"val_loss": rec_loss, "val_rmse_z500": rmse}, prog_bar=True)
 
         return loss
 
