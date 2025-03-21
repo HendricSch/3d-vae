@@ -11,3 +11,4 @@ xarray
 xbatcher
 zarr
 gcsfs
+tensorboard
