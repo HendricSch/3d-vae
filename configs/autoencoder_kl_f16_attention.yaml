@@ -10,7 +10,7 @@ config:
     out_channels: 69
 
   dataloader:
-    num_workers: 2
+    num_workers: 32
 
   model:
     z_channels: 64

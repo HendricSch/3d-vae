@@ -1,0 +1,33 @@
+config:
+  config:
+    data:
+      in_channels: 69
+      out_channels: 69
+      x: 1440
+      y: 720
+    dataloader:
+      num_workers: 32
+    general:
+      name: vae-kl-f16-1440x720-69c-attention-
+    loss:
+      kl_weight: 1.0e-06
+      reconstruction_loss: l1
+    model:
+      attention: true
+      channel_mult:
+      - 1
+      - 2
+      - 2
+      - 4
+      - 4
+      channels: 128
+      embed_dim: 64
+      norm_groups: 32
+      num_heads: 4
+      num_res_blocks: 2
+      z_channels: 64
+    training:
+      batch_size: 1
+      epochs: 10
+      learning_rate: 4.5e-06
+      lr_scheduler: None
