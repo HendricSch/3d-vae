@@ -17,7 +17,10 @@ def main():
 
     data = ERA5DataModule(config)
 
-    autoencoder = Autoencoder(config)
+    # autoencoder = Autoencoder(config)
+
+    autoencoder = Autoencoder.load_from_checkpoint(
+        "checkpoints/vae-kl-f16-1440x720-69c-attention--step=31000.ckpt", config=config, strict=False)
 
     checkpoint_callback = ModelCheckpoint(
         dirpath="checkpoints/",

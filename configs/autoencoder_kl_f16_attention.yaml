@@ -1,7 +1,7 @@
 config:
 
   general:
-    name: vae-kl-f16-1440x720-69c-attention-
+    name: vae-kl-f16-1440x720-69c-attention-disc
 
   data:
     x: 1440 # 1440
@@ -25,6 +25,8 @@ config:
   loss:
     reconstruction_loss: l1
     kl_weight: 0.000001
+    discriminator_weight: 0.5
+    discriminator_start_steps: 100
 
   training:
     learning_rate: 0.0000045

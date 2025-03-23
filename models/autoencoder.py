@@ -5,6 +5,7 @@ from models.blocks.encoder import Encoder
 from models.blocks.decoder import Decoder
 
 from models.blocks.distributions import DiagonalGaussianDistribution
+from models.losses import RecKLDiscriminatorLoss
 
 from metrics.metrics import WeightedRMSE
 
@@ -48,6 +49,7 @@ class Autoencoder(pl.LightningModule):
         self.example_input_array = torch.zeros(
             self.batch_size, self.in_channels, self.x, self.y
         )
+        self.automatic_optimization = False
 
         ### Initialize the model ###
 
@@ -63,6 +65,9 @@ class Autoencoder(pl.LightningModule):
         # Post-quantization layers
         self.post_quant_conv = torch.nn.Conv2d(
             self.embed_dim, self.z_channels, 1)
+
+        # Loss and discriminator
+        self.loss_model = RecKLDiscriminatorLoss(config)
 
     def encode(self, x: torch.Tensor) -> DiagonalGaussianDistribution:
 
@@ -94,56 +99,62 @@ class Autoencoder(pl.LightningModule):
 
         return dec, posterior
 
-    def loss(self, inputs: torch.Tensor, reconstructions: torch.Tensor, posterior: DiagonalGaussianDistribution) -> tuple[torch.Tensor, torch.Tensor]:
-
-        rec_loss_fn = None
-
-        if self.reconstruction_loss_fn == "l1":
-            rec_loss_fn = torch.nn.functional.l1_loss
-
-        elif self.reconstruction_loss_fn == "mse":
-            rec_loss_fn = torch.nn.functional.mse_loss
-
-        else:
-            raise ValueError(
-                f"Invalid reconstruction loss: {self.reconstruction_loss_fn}")
-
-        rec_loss = rec_loss_fn(reconstructions, inputs)
-
-        kl_loss = posterior.kl().mean()
-        kl_loss = kl_loss * self.kl_weight
-
-        return rec_loss, kl_loss
-
     def training_step(self, batch: torch.Tensor, batch_idx):
 
+        opt_ae, opt_disc = self.optimizers()
+
         inputs = batch
-        rec, posterior = self.forward(inputs)
+        reconstructions, posteriors = self.forward(inputs)
 
-        rec_loss, kl_loss = self.loss(inputs, rec, posterior)
+        ### Train encoder + decoder ###
+        ae_loss, ae_log = self.loss_model.forward(
+            inputs=inputs,
+            reconstructions=reconstructions,
+            posteriors=posteriors,
+            global_step=self.global_step,
+            optimizer="Generator"
+        )
 
-        loss = rec_loss + kl_loss
+        opt_ae.zero_grad()
+        self.manual_backward(ae_loss)
+        opt_ae.step()
 
-        self.log("loss", loss, prog_bar=True,
-                 logger=True, on_step=True, on_epoch=True)
+        ### Train discriminator ###
+        disc_loss, disc_log = self.loss_model.forward(
+            inputs=inputs,
+            reconstructions=reconstructions,
+            posteriors=posteriors,
+            global_step=self.global_step,
+            optimizer="Discriminator"
+        )
 
-        return loss
+        opt_disc.zero_grad()
+        self.manual_backward(disc_loss)
+        opt_disc.step()
+
+        ### Log the losses ###
+        self.log("vae_loss", ae_loss, prog_bar=True)
+
+        self.log_dict(ae_log)
+        self.log_dict(disc_log)
 
     def validation_step(self, batch: torch.Tensor, batch_idx):
 
         inputs = batch
-        rec, posterior = self.forward(inputs)
+        reconstructions, posteriors = self.forward(inputs)
 
-        rec_loss, kl_loss = self.loss(inputs, rec, posterior)
-
-        loss = rec_loss + kl_loss
+        loss, ae_log = self.loss_model.forward(
+            inputs=inputs,
+            reconstructions=reconstructions,
+            posteriors=posteriors,
+            global_step=self.global_step,
+            optimizer="Generator"
+        )
 
         # rmse for z500
 
-        # input = (1, 69, 1440, 720) torch.Tensor
-
         z500_truth = inputs[:, 50, :, :]
-        z500_pred = rec[:, 50, :, :]
+        z500_pred = reconstructions[:, 50, :, :]
 
         z500_mean, z500_std = 53921.2137, 3091.97738
 
@@ -156,12 +167,8 @@ class Autoencoder(pl.LightningModule):
         rmse = self.weighted_rmse(z_500_truth, z_500_pred)[0]
         rmse = float(rmse)
 
-        # self.log("val/rec_loss", rec_loss)
-
         self.log_dict(
-            {"val_loss": rec_loss, "val_rmse_z500": rmse}, prog_bar=True)
-
-        return loss
+            {"val_vae_loss": ae_log["rec_loss"], "val_rmse_z500": rmse}, prog_bar=True)
 
     def configure_optimizers(self):
 
@@ -173,11 +180,14 @@ class Autoencoder(pl.LightningModule):
                                    list(self.post_quant_conv.parameters()),
                                    lr=lr, betas=(0.5, 0.9))
 
+        opt_disc = torch.optim.AdamW(
+            self.loss_model.discriminator.parameters(), lr=lr, betas=(0.5, 0.9))
+
         if self.lr_scheduler != "None":
             raise NotImplementedError(
                 "Learning rate scheduler not implemented")
 
-        return opt_ae
+        return [opt_ae, opt_disc], []
 
     @torch.no_grad()
     def log_images(self, batch):

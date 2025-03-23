@@ -59,3 +59,100 @@ class NLayerDiscriminator(nn.Module):
     def forward(self, input):
         """Standard forward."""
         return self.main(input)
+
+
+class PatchGANDiscriminator(nn.Module):
+
+    def __init__(self, in_channels: int, out_channels: int, channels: int):
+        super(PatchGANDiscriminator, self).__init__()
+
+        self.block1 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=in_channels,
+                out_channels=channels * 2,
+                kernel_size=4,
+                stride=2,
+                padding=1
+            ),
+            nn.LeakyReLU(0.2, inplace=True)
+        )
+
+        self.block2 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=channels * 2,
+                out_channels=channels * 2,
+                kernel_size=4,
+                stride=2,
+                padding=1
+            ),
+            nn.BatchNorm2d(channels * 2),
+            nn.LeakyReLU(0.2, inplace=True)
+        )
+
+        self.block3 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=channels * 2,
+                out_channels=channels * 4,
+                kernel_size=4,
+                stride=2,
+                padding=1
+            ),
+            nn.BatchNorm2d(channels * 4),
+            nn.LeakyReLU(0.2, inplace=True)
+        )
+
+        self.block4 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=channels * 4,
+                out_channels=channels * 8,
+                kernel_size=4,
+                stride=1,
+                padding=1
+            ),
+            nn.BatchNorm2d(channels * 8),
+            nn.LeakyReLU(0.2, inplace=True)
+        )
+
+        self.block5 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=channels * 8,
+                out_channels=channels * 8,
+                kernel_size=4,
+                stride=1,
+                padding=1
+            ),
+            nn.BatchNorm2d(channels * 8),
+            nn.LeakyReLU(0.2, inplace=True)
+        )
+
+        self.block6 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=channels * 8,
+                out_channels=channels * 8,
+                kernel_size=4,
+                stride=1,
+                padding=1
+            ),
+            nn.BatchNorm2d(channels * 8),
+            nn.LeakyReLU(0.2, inplace=True)
+        )
+
+        self.out = nn.Sequential(
+            nn.Conv2d(
+                in_channels=channels * 8,
+                out_channels=out_channels,
+                kernel_size=4,
+                stride=1,
+                padding=1
+            ),
+        )
+
+    def forward(self, x):
+        x = self.block1(x)
+        x = self.block2(x)
+        x = self.block3(x)
+        x = self.block4(x)
+        x = self.block5(x)
+        x = self.block6(x)
+        x = self.out(x)
+        return x
