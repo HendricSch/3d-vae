@@ -70,13 +70,16 @@ class RecKLDiscriminatorLoss(nn.Module):
         elif optimizer == "Discriminator":
 
             # Discriminator loss
-            logits_real = self.discriminator(inputs)
-            logits_fake = self.discriminator(reconstructions)
+            logits_real = self.discriminator(inputs.detach())
+            logits_fake = self.discriminator(reconstructions.detach())
 
             d_loss = 0.5 * (
                 torch.mean(torch.nn.functional.softplus(-logits_real)) +
                 torch.mean(torch.nn.functional.softplus(logits_fake))
             )
+
+            if global_step < self.discriminator_start_steps:
+                d_loss = 0
 
             log = {
                 "d_loss": d_loss
