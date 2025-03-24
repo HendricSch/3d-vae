@@ -54,16 +54,13 @@ class WeightedRMSELoss(nn.Module):
 
     def forward(self, truth: torch.Tensor, forecast: torch.Tensor) -> torch.Tensor:
 
-        b, c, long, lat = truth.shape
-
-        err = truth - forecast
+        err = (truth - forecast) ** 2
         err = err * self.weights
 
-        mean_err = torch.mean(err, dim=(2, 3))
+        mse = torch.mean(err, dim=(1, 2, 3))
+        rmse = torch.sqrt(mse)
 
-        rmse = torch.sqrt(mean_err ** 2)
-
-        return torch.mean(rmse)
+        return rmse
 
 
 class RecKLDiscriminatorLoss(nn.Module):
