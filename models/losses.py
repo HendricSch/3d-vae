@@ -30,11 +30,11 @@ def vanilla_d_loss(logits_real: torch.Tensor, logits_fake: torch.Tensor) -> torc
 
 class WeightedRMSELoss(nn.Module):
 
-    def __init__(self, num_latitudes: int):
+    def __init__(self, num_latitudes: int, device: str):
         super(WeightedRMSELoss, self).__init__()
 
         self.num_latitudes = num_latitudes
-        self.weights = self._get_lat_weights(num_latitudes)
+        self.weights = self._get_lat_weights(num_latitudes).to(device)
 
     def _latitude_cell_bounds(self, x: torch.Tensor) -> torch.Tensor:
         pi_over_2 = torch.tensor([torch.tensor(torch.pi / 2)], dtype=x.dtype)
@@ -87,7 +87,7 @@ class RecKLDiscriminatorLoss(nn.Module):
             self.reconstruction_loss_fn = torch.nn.MSELoss()
         elif config["config"]["loss"]["reconstruction_loss"] == "rmse":
             self.reconstruction_loss_fn = WeightedRMSELoss(
-                num_latitudes=config["config"]["data"]["y"])
+                num_latitudes=config["config"]["data"]["y"], device="cuda")
         else:
             raise ValueError(
                 f"Invalid reconstruction loss: {config['config']['loss']['reconstruction_loss']}! Must be one of ['l1', 'mse']")
