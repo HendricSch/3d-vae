@@ -12,15 +12,12 @@ def main():
 
     torch.set_float32_matmul_precision("medium")
 
-    with open("configs/autoencoder_kl_f16_attention.yaml", "r") as f:
+    with open("configs/autoencoder/kl-f8.yaml", "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
     data = ERA5DataModule(config)
 
-    # autoencoder = Autoencoder(config)
-
-    autoencoder = Autoencoder.load_from_checkpoint(
-        "checkpoints/vae-kl-f16-1440x720-69c-attention--step=31000.ckpt", config=config, strict=False)
+    autoencoder = Autoencoder(config)
 
     checkpoint_callback = ModelCheckpoint(
         dirpath="checkpoints/",
@@ -33,7 +30,7 @@ def main():
         max_epochs=config["config"]["training"]["epochs"],
         precision="16-mixed",
         callbacks=[checkpoint_callback],
-        limit_val_batches=50,
+        limit_val_batches=100,
         val_check_interval=500
     )
 

@@ -28,6 +28,44 @@ def vanilla_d_loss(logits_real: torch.Tensor, logits_fake: torch.Tensor) -> torc
     return d_loss
 
 
+class WeightedRMSELoss(nn.Module):
+
+    def __init__(self, num_latitudes: int):
+        super(WeightedRMSELoss, self).__init__()
+
+        self.num_latitudes = num_latitudes
+        self.weights = self._get_lat_weights(num_latitudes)
+
+    def _latitude_cell_bounds(self, x: torch.Tensor) -> torch.Tensor:
+        pi_over_2 = torch.tensor([torch.tensor(torch.pi / 2)], dtype=x.dtype)
+        return torch.cat([-pi_over_2, (x[:-1] + x[1:]) / 2, pi_over_2])
+
+    def _cell_area_from_latitude(self, points: torch.Tensor) -> torch.Tensor:
+        bounds = self._latitude_cell_bounds(points)
+        upper = bounds[1:]
+        lower = bounds[:-1]
+        return torch.sin(upper) - torch.sin(lower)
+
+    def _get_lat_weights(self, num_latitudes: int) -> torch.Tensor:
+        weights = self._cell_area_from_latitude(
+            torch.deg2rad(torch.linspace(-90, 90, num_latitudes)))
+        weights /= torch.mean(weights)
+        return weights
+
+    def forward(self, truth: torch.Tensor, forecast: torch.Tensor) -> torch.Tensor:
+
+        b, c, long, lat = truth.shape
+
+        err = truth - forecast
+        err = err * self.weights
+
+        mean_err = torch.mean(err, dim=(2, 3))
+
+        rmse = torch.sqrt(mean_err ** 2)
+
+        return torch.mean(rmse)
+
+
 class RecKLDiscriminatorLoss(nn.Module):
     def __init__(self, config: dict):
         super(RecKLDiscriminatorLoss, self).__init__()
@@ -47,6 +85,9 @@ class RecKLDiscriminatorLoss(nn.Module):
             self.reconstruction_loss_fn = torch.nn.L1Loss()
         elif config["config"]["loss"]["reconstruction_loss"] == "mse":
             self.reconstruction_loss_fn = torch.nn.MSELoss()
+        elif config["config"]["loss"]["reconstruction_loss"] == "rmse":
+            self.reconstruction_loss_fn = WeightedRMSELoss(
+                num_latitudes=config["config"]["data"]["y"])
         else:
             raise ValueError(
                 f"Invalid reconstruction loss: {config['config']['loss']['reconstruction_loss']}! Must be one of ['l1', 'mse']")

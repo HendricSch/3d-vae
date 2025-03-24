@@ -1,7 +1,7 @@
 config:
 
   general:
-    name: vae-kl-f8-attention-discriminator
+    name: vae-kl-f8
 
   data:
     x: 1440 # 1440
@@ -19,14 +19,14 @@ config:
     channel_mult: [1, 2, 4, 4]
     num_res_blocks: 2
     norm_groups: 32
-    attention: True
+    attention: False
     num_heads: 4
 
   loss:
-    reconstruction_loss: l1
+    reconstruction_loss: rmse
     kl_weight: 0.000001
     discriminator_weight: 0.5
-    discriminator_start_steps: 100
+    discriminator_start_steps: 100000
 
   training:
     learning_rate: 0.0000045
