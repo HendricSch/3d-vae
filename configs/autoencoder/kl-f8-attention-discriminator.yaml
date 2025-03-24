@@ -1,7 +1,7 @@
 config:
 
   general:
-    name: vae-kl-f16-1440x720-69c-attention-disc-new
+    name: vae-kl-f8-attention-discriminator
 
   data:
     x: 1440 # 1440
@@ -16,7 +16,7 @@ config:
     z_channels: 64
     embed_dim: 64
     channels: 128
-    channel_mult: [1, 2, 2, 4, 4]
+    channel_mult: [1, 2, 4, 4]
     num_res_blocks: 2
     norm_groups: 32
     attention: True

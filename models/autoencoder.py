@@ -69,6 +69,9 @@ class Autoencoder(pl.LightningModule):
         # Loss and discriminator
         self.loss_model = RecKLDiscriminatorLoss(config)
 
+    def get_last_layer(self):
+        return self.decoder.conv_out.weight
+
     def encode(self, x: torch.Tensor) -> DiagonalGaussianDistribution:
 
         h = self.encoder(x)
@@ -112,7 +115,8 @@ class Autoencoder(pl.LightningModule):
             reconstructions=reconstructions,
             posteriors=posteriors,
             global_step=self.global_step,
-            optimizer="Generator"
+            optimizer="Generator",
+            last_layer=self.get_last_layer()
         )
 
         opt_ae.zero_grad()
@@ -125,7 +129,8 @@ class Autoencoder(pl.LightningModule):
             reconstructions=reconstructions,
             posteriors=posteriors,
             global_step=self.global_step,
-            optimizer="Discriminator"
+            optimizer="Discriminator",
+            last_layer=self.get_last_layer()
         )
 
         opt_disc.zero_grad()
@@ -148,7 +153,8 @@ class Autoencoder(pl.LightningModule):
             reconstructions=reconstructions,
             posteriors=posteriors,
             global_step=self.global_step,
-            optimizer="Generator"
+            optimizer="Generator",
+            last_layer=self.get_last_layer()
         )
 
         # rmse for z500
