@@ -67,7 +67,7 @@ class WeightedRMSELoss(nn.Module):
 
 
 class RecKLDiscriminatorLoss(nn.Module):
-    def __init__(self, config: dict):
+    def __init__(self, config: dict, device: str):
         super(RecKLDiscriminatorLoss, self).__init__()
 
         self.kl_weight = config["config"]["loss"]["kl_weight"]
@@ -87,7 +87,7 @@ class RecKLDiscriminatorLoss(nn.Module):
             self.reconstruction_loss_fn = torch.nn.MSELoss()
         elif config["config"]["loss"]["reconstruction_loss"] == "rmse":
             self.reconstruction_loss_fn = WeightedRMSELoss(
-                num_latitudes=config["config"]["data"]["y"], device="cuda")
+                num_latitudes=config["config"]["data"]["y"], device=device)
         else:
             raise ValueError(
                 f"Invalid reconstruction loss: {config['config']['loss']['reconstruction_loss']}! Must be one of ['l1', 'mse']")
@@ -103,11 +103,8 @@ class RecKLDiscriminatorLoss(nn.Module):
         g_grads = torch.autograd.grad(g_loss, last_layer, retain_graph=True)[0]
 
         d_weight = torch.norm(rec_grads) / (torch.norm(g_grads) + 1e-4)
-        print(d_weight)
         d_weight = torch.clamp(d_weight, 0.0, 1e4).detach()
-        print(d_weight)
         d_weight = d_weight * self.discriminator_weight
-        print(d_weight)
 
         return d_weight
 

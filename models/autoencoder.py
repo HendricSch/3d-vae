@@ -67,7 +67,7 @@ class Autoencoder(pl.LightningModule):
             self.embed_dim, self.z_channels, 1)
 
         # Loss and discriminator
-        self.loss_model = RecKLDiscriminatorLoss(config)
+        self.loss_model = RecKLDiscriminatorLoss(config, device=self.device)
 
     def get_last_layer(self):
         return self.decoder.conv_out.weight
