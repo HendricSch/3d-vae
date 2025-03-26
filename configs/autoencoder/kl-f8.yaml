@@ -1,7 +1,7 @@
 config:
 
   general:
-    name: vae-kl-f8
+    name: vae-kl-f8-rmse
 
   data:
     x: 1440 # 1440
@@ -26,7 +26,7 @@ config:
     reconstruction_loss: rmse
     kl_weight: 0.000001
     discriminator_weight: 0.5
-    discriminator_start_steps: 100000
+    discriminator_start_steps: 1000000
 
   training:
     learning_rate: 0.0001
