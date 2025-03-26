@@ -12,6 +12,10 @@ def main():
 
     torch.set_float32_matmul_precision("medium")
 
+    # set seed
+    torch.manual_seed(42)
+    torch.cuda.manual_seed(42)
+
     with open("configs/autoencoder/kl-f8.yaml", "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 

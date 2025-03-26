@@ -22,7 +22,7 @@ def main():
     checkpoint_callback = ModelCheckpoint(
         dirpath="checkpoints/",
         filename=config["config"]["general"]["name"] + "-{step}",
-        every_n_train_steps=500,
+        every_n_train_steps=2500,
 
     )
 
@@ -30,8 +30,8 @@ def main():
         max_epochs=config["config"]["training"]["epochs"],
         precision="16-mixed",
         callbacks=[checkpoint_callback],
-        limit_val_batches=100,
-        val_check_interval=500
+        limit_val_batches=500,
+        val_check_interval=2500
     )
 
     trainer.fit(autoencoder, datamodule=data)

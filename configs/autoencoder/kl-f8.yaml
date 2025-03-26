@@ -29,7 +29,7 @@ config:
     discriminator_start_steps: 100000
 
   training:
-    learning_rate: 0.0000045
+    learning_rate: 0.0001
     epochs: 10
     batch_size: 1
     lr_scheduler: None

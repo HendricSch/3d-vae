@@ -49,7 +49,7 @@ class Autoencoder(pl.LightningModule):
         self.example_input_array = torch.zeros(
             self.batch_size, self.in_channels, self.x, self.y
         )
-        # self.automatic_optimization = False
+        self.automatic_optimization = False
 
         ### Initialize the model ###
 
@@ -104,7 +104,7 @@ class Autoencoder(pl.LightningModule):
 
     def training_step(self, batch: torch.Tensor, batch_idx):
 
-        # opt_ae, opt_disc = self.optimizers()
+        opt_ae, opt_disc = self.optimizers()
 
         inputs = batch
         reconstructions, posteriors = self.forward(inputs)
@@ -119,31 +119,29 @@ class Autoencoder(pl.LightningModule):
             last_layer=self.get_last_layer()
         )
 
-        # opt_ae.zero_grad()
-        # self.manual_backward(ae_loss)
-        # opt_ae.step()
+        opt_ae.zero_grad()
+        self.manual_backward(ae_loss)
+        opt_ae.step()
 
         ### Train discriminator ###
-        # disc_loss, disc_log = self.loss_model.forward(
-        #     inputs=inputs,
-        #     reconstructions=reconstructions,
-        #     posteriors=posteriors,
-        #     global_step=self.global_step,
-        #     optimizer="Discriminator",
-        #     last_layer=self.get_last_layer()
-        # )
+        disc_loss, disc_log = self.loss_model.forward(
+            inputs=inputs,
+            reconstructions=reconstructions,
+            posteriors=posteriors,
+            global_step=self.global_step,
+            optimizer="Discriminator",
+            last_layer=self.get_last_layer()
+        )
 
-        # opt_disc.zero_grad()
-        # self.manual_backward(disc_loss)
-        # opt_disc.step()
+        opt_disc.zero_grad()
+        self.manual_backward(disc_loss)
+        opt_disc.step()
 
         ### Log the losses ###
         self.log("vae_loss", ae_loss, prog_bar=True)
 
         self.log_dict(ae_log)
-        # self.log_dict(disc_log)
-
-        return ae_loss
+        self.log_dict(disc_log)
 
     def validation_step(self, batch: torch.Tensor, batch_idx):
 
@@ -195,8 +193,7 @@ class Autoencoder(pl.LightningModule):
             raise NotImplementedError(
                 "Learning rate scheduler not implemented")
 
-        # return [opt_ae, opt_disc], []
-        return opt_ae
+        return [opt_ae, opt_disc], []
 
     @torch.no_grad()
     def log_images(self, batch):
