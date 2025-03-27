@@ -12,12 +12,13 @@ def main():
 
     torch.set_float32_matmul_precision("medium")
 
-    with open("configs/autoencoder/kl-f8.yaml", "r") as f:
+    with open("configs/autoencoder/kl-f8-disc.yaml", "r") as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
 
     data = ERA5DataModule(config)
 
-    autoencoder = Autoencoder(config)
+    # autoencoder = Autoencoder(config)
+    autoencoder = Autoencoder.load_from_checkpoint("checkpoints/vae-kl-f8-rmse.ckpt", config=config, strict=False)
 
     checkpoint_callback = ModelCheckpoint(
         dirpath="checkpoints/",
