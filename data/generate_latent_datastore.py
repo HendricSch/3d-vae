@@ -179,9 +179,9 @@ def main():
     AUTOENCODER_CHECKPOINT = "checkpoints/vae-kl-f8-rmse-disc-2-step=5000-z500=93.ckpt"
     LATENT_STORE_PATH = "zarr_files/latent_vae-kl-f8.zarr"
     TIME_START = "2023-01-01"
-    NUM_SAMPLES = 16
-    NUM_THREADS = 8
-    THREAD_CHUNK_SIZE = 8
+    NUM_SAMPLES = 3200
+    NUM_THREADS = 64
+    THREAD_CHUNK_SIZE = 128
     DEVICE = "cuda"
 
     assert NUM_SAMPLES % THREAD_CHUNK_SIZE == 0, (
