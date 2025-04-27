@@ -177,11 +177,11 @@ def main():
     # Konstanten
     AUTOENCODER_CONFIG = "configs/autoencoder/kl-f8.yaml"
     AUTOENCODER_CHECKPOINT = "checkpoints/vae-kl-f8-rmse-disc-2-step=5000-z500=93.ckpt"
-    LATENT_STORE_PATH = "zarr_files/latent_vae-kl-f8.zarr"
+    LATENT_STORE_PATH = "zarr_files/latent_moments_vae-kl-f8.zarr"
     TIME_START = "2023-01-01"
-    NUM_SAMPLES = 3200
-    NUM_THREADS = 64
-    THREAD_CHUNK_SIZE = 128
+    NUM_SAMPLES = 16
+    NUM_THREADS = 4
+    THREAD_CHUNK_SIZE = 8
     DEVICE = "cuda"
 
     assert NUM_SAMPLES % THREAD_CHUNK_SIZE == 0, (
@@ -205,7 +205,7 @@ def main():
     # Erstelle Zarr-Store für die latenten Wetterdaten
     x_cord = np.arange(0, 180, 1)
     y_cord = np.arange(0, 90, 1)
-    channel_cord = np.arange(0, 64, 1)
+    channel_cord = np.arange(0, 128, 1)
     time_cord = pd.date_range(TIME_START, periods=NUM_SAMPLES, freq="6h")
 
     dataset = xr.Dataset(
@@ -220,8 +220,8 @@ def main():
                 ["time", "channel", "x", "y"],
                 da.zeros(
                     (time_cord.size, channel_cord.size, x_cord.size, y_cord.size),
-                    chunks=(1, 64, 180, 90),
-                    dtype="float32",
+                    chunks=(1, 128, 180, 90),
+                    dtype="float16",
                 ),
             )
         },
@@ -231,9 +231,9 @@ def main():
         LATENT_STORE_PATH,
         compute=False,
         mode="w",
-        zarr_format=3,
+        zarr_format=2,
         consolidated=False,
-        encoding={"data": {"dtype": "float32"}},
+        encoding={"data": {"dtype": "float16"}},
     )
 
     # Initialisiere ERA5 Dataset aus der Cloud
@@ -275,7 +275,7 @@ def main():
     job = pool.map_async(bgen.__getitem__, range(0, THREAD_CHUNK_SIZE))
     batches: list[xr.Dataset] = None
 
-    for i in tqdm(range(NUM_SAMPLES // THREAD_CHUNK_SIZE)):
+    for i in tqdm(range(NUM_SAMPLES // THREAD_CHUNK_SIZE), position=0, leave=True):
         batches = job.get()
 
         if i != (NUM_SAMPLES // THREAD_CHUNK_SIZE) - 1:
@@ -285,7 +285,7 @@ def main():
                       (i + 2) * THREAD_CHUNK_SIZE),
             )
 
-        for batch in batches:
+        for batch in tqdm(batches, position=1, leave=False):
             stacked = batch.to_stacked_array(
                 new_dim="channel", sample_dims=["latitude", "longitude"]
             ).transpose("channel", "longitude", "latitude")
@@ -300,8 +300,12 @@ def main():
             x = x.to(DEVICE)
 
             with torch.autocast(device_type=DEVICE, dtype=torch.bfloat16):
-                posterior = autoencoder.encode(x)
-                z = posterior.sample()
+                # posterior = autoencoder.encode(x)
+                # z = posterior.sample()
+                # z = z.cpu().numpy()
+                h = autoencoder.encoder.forward(x)
+                z = autoencoder.quant_conv.forward(h)
+                z = z.type(torch.float16)
                 z = z.cpu().numpy()
 
             date = batch.time.values[0]

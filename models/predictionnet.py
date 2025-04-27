@@ -3,22 +3,122 @@ import math
 import lightning as pl
 
 
-class PredictionModel(pl.LightningModule):
-    def __init__(self, config: dict):
+class DummyModel(pl.LightningModule):
+
+    def __init__(self):
         super().__init__()
-        pass
+
+        self.conv_1 = torch.nn.Conv2d(
+            in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1
+        )
+
+        self.conv_2 = torch.nn.Conv2d(
+            in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1
+        )
+
+        self.conv_3 = torch.nn.Conv2d(
+            in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1
+        )
+
+        self.conv_4 = torch.nn.Conv2d(
+            in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        pass
+        x = self.conv_1(x)
+        x = torch.nn.functional.silu(x)
+
+        x = self.conv_2(x)
+        x = torch.nn.functional.silu(x)
+
+        x = self.conv_3(x)
+        x = torch.nn.functional.silu(x)
+
+        x = self.conv_4(x)
+
+        return x
 
     def training_step(self, batch: torch.Tensor, batch_idx):
-        pass
+        x, y = batch
+
+        pred = self.forward(x)
+        loss = torch.nn.functional.l1_loss(pred, y - x)
+
+        self.log("train_loss", loss, prog_bar=True)
+
+        return loss
 
     def validation_step(self, batch: torch.Tensor, batch_idx):
-        pass
+        x, y = batch
+
+        pred = self.forward(x)
+        loss = torch.nn.functional.l1_loss(pred, y - x)
+
+        self.log("val_loss", loss, prog_bar=True)
+
+        return loss
 
     def configure_optimizers(self):
-        pass
+        lr = 4e-3
+
+        optimizer = torch.optim.AdamW(
+            self.parameters(), lr=lr
+        )
+
+        return optimizer
+
+
+class PredictionModel(pl.LightningModule):
+    def __init__(self):
+        super().__init__()
+
+        self.unet = UNet(
+            in_channels=128,
+            base_channels=128,
+            channels_mult=[1, 1, 2, 2, 4],
+            num_resblocks=2,
+            attention_layers=[False, False, True, True, True],
+            pads=(3, 3, 6, 6),
+        )
+
+        self.learning_rate = 3e-4
+        self.save_hyperparameters()
+        self.example_input_array = torch.zeros(8, 128, 180, 90)
+
+        self.loss_fn = torch.nn.MSELoss()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.unet.forward(x)
+
+    def training_step(self, batch: torch.Tensor, batch_idx):
+        x, y = batch
+
+        prediction = self.forward(x)
+
+        loss = self.loss_fn.forward(prediction, y)
+
+        self.log("train_loss", loss.clone().detach().mean(), prog_bar=True)
+
+        return loss
+
+    def validation_step(self, batch: torch.Tensor, batch_idx):
+        x, y = batch
+
+        prediction = self.forward(x)
+        loss = self.loss_fn.forward(prediction, y)
+
+        self.log("val_loss", loss.clone().detach().mean(), prog_bar=True)
+
+        return loss
+
+    def configure_optimizers(self):
+        lr = self.learning_rate
+
+        optimizer = torch.optim.Adam(
+            self.parameters(), lr=lr
+        )
+
+        return optimizer
 
 
 class ResBlock(torch.nn.Module):
@@ -344,7 +444,6 @@ class UNet(torch.nn.Module):
             self.up_blocks.append(up_block)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-
         h = self.pad(x)
 
         h = self.conv_in(h)
