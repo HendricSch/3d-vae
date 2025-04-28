@@ -74,7 +74,7 @@ class PredictionModel(pl.LightningModule):
 
         self.unet = UNet(
             in_channels=128,
-            base_channels=128,
+            base_channels=256,
             channels_mult=[1, 1, 2, 2, 4],
             num_resblocks=2,
             attention_layers=[False, False, True, True, True],
@@ -83,7 +83,7 @@ class PredictionModel(pl.LightningModule):
 
         self.learning_rate = 3e-4
         self.save_hyperparameters()
-        self.example_input_array = torch.zeros(8, 128, 180, 90)
+        self.example_input_array = torch.zeros(8, 256, 180, 90)
 
         self.loss_fn = torch.nn.MSELoss()
 
@@ -91,25 +91,28 @@ class PredictionModel(pl.LightningModule):
         return self.unet.forward(x)
 
     def training_step(self, batch: torch.Tensor, batch_idx):
-        x, y = batch
+        x_1, x_2, y = batch
+
+        x = torch.cat([x_1, x_2], dim=1)
 
         prediction = self.forward(x)
 
         loss = self.loss_fn.forward(prediction, y)
 
-        self.log("train_loss", loss.clone().detach().mean(), prog_bar=True)
+        self.log("train_loss", loss.item(), prog_bar=True)
 
         return loss
 
     def validation_step(self, batch: torch.Tensor, batch_idx):
-        x, y = batch
+        x_1, x_2, y = batch
+
+        x = torch.cat([x_1, x_2], dim=1)
 
         prediction = self.forward(x)
+
         loss = self.loss_fn.forward(prediction, y)
 
-        self.log("val_loss", loss.clone().detach().mean(), prog_bar=True)
-
-        return loss
+        self.log("val_loss", loss.item(), prog_bar=True)
 
     def configure_optimizers(self):
         lr = self.learning_rate
@@ -392,7 +395,7 @@ class UNet(torch.nn.Module):
         assert len(channels_mult) == len(attention_layers)
 
         self.conv_in = torch.nn.Conv2d(
-            in_channels, self.channels[0], kernel_size=3, stride=1, padding=1
+            2 * in_channels, self.channels[0], kernel_size=3, stride=1, padding=1
         )
 
         self.conv_out = torch.nn.Conv2d(

@@ -24,8 +24,8 @@ def gen_latents_bgen(zarr_path: str, train: bool) -> xb.BatchGenerator:
 
     bgen = xb.BatchGenerator(
         ds,
-        input_dims={"time": 2, "channel": 128, "x": 180, "y": 90},
-        input_overlap={"time": 1, "channel": 0, "x": 0, "y": 0},
+        input_dims={"time": 3, "channel": 128, "x": 180, "y": 90},
+        input_overlap={"time": 2, "channel": 0, "x": 0, "y": 0},
     )
 
     return bgen
@@ -46,7 +46,7 @@ class LatentsDataset(torch.utils.data.Dataset):
 
         tensor = torch.tensor(batch.data.values)
 
-        return tensor[0], tensor[1]
+        return tensor[0], tensor[1], tensor[2]
 
 
 class LatentsDataModule(pl.LightningDataModule):
@@ -83,10 +83,6 @@ class LatentsDataModule(pl.LightningDataModule):
         return torch.utils.data.DataLoader(
             self.val_ds,
             batch_size=self.batch_size,
-            shuffle=False,
-            num_workers=1,
-            persistent_workers=True,
-            multiprocessing_context="spawn"
         )
 
 

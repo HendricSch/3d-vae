@@ -11,7 +11,7 @@ def main():
 
     torch.set_float32_matmul_precision("medium")
 
-    data = LatentsDataModule(batch_size=1)
+    data = LatentsDataModule(batch_size=2)
 
     model = PredictionModel()
     # model = DummyModel()
@@ -24,9 +24,8 @@ def main():
     # )
 
     trainer = lightning.Trainer(
-        max_epochs=200,
+        max_epochs=-1,
         precision="16-mixed",
-        check_val_every_n_epoch=100,
     )
 
     trainer.fit(model, datamodule=data)
