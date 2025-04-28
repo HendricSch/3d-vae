@@ -231,7 +231,7 @@ def main():
         LATENT_STORE_PATH,
         compute=False,
         mode="w",
-        zarr_format=2,
+        zarr_format=3,
         consolidated=False,
         encoding={"data": {"dtype": "float16"}},
     )
