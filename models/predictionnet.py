@@ -74,7 +74,7 @@ class PredictionModel(pl.LightningModule):
 
         self.unet = UNet(
             in_channels=128,
-            base_channels=256,
+            base_channels=128,
             channels_mult=[1, 1, 2, 2, 4],
             num_resblocks=2,
             attention_layers=[False, False, True, True, True],
@@ -86,6 +86,8 @@ class PredictionModel(pl.LightningModule):
         self.example_input_array = torch.zeros(8, 256, 180, 90)
 
         self.loss_fn = torch.nn.MSELoss()
+
+        self.val_losses = []
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.unet.forward(x)
@@ -112,12 +114,27 @@ class PredictionModel(pl.LightningModule):
 
         loss = self.loss_fn.forward(prediction, y)
 
-        self.log("val_loss", loss.item(), prog_bar=True)
+        self.val_losses.append(loss.item())
+
+    def on_validation_epoch_end(self):
+        losses = torch.tensor(self.val_losses)
+
+        # remove nan values
+        losses = losses[~torch.isnan(losses)]
+
+        # remove inf values
+        losses = losses[~torch.isinf(losses)]
+
+        avg_loss = torch.mean(losses)
+
+        self.log("val_loss", avg_loss, prog_bar=True)
+
+        self.val_losses = []
 
     def configure_optimizers(self):
         lr = self.learning_rate
 
-        optimizer = torch.optim.Adam(
+        optimizer = torch.optim.AdamW(
             self.parameters(), lr=lr
         )
 

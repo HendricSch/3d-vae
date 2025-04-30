@@ -178,8 +178,8 @@ def main():
     AUTOENCODER_CONFIG = "configs/autoencoder/kl-f8.yaml"
     AUTOENCODER_CHECKPOINT = "checkpoints/vae-kl-f8-rmse-disc-2-step=5000-z500=93.ckpt"
     LATENT_STORE_PATH = "zarr_files/latent_moments_vae-kl-f8.zarr"
-    TIME_START = "2023-01-01"
-    NUM_SAMPLES = 3200
+    TIME_START = "1940-01-01"
+    NUM_SAMPLES = 25088
     NUM_THREADS = 64
     THREAD_CHUNK_SIZE = 128
     DEVICE = "cuda"
