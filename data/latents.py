@@ -74,15 +74,19 @@ class LatentsDataModule(pl.LightningDataModule):
             self.train_ds,
             batch_size=self.batch_size,
             shuffle=True,
-            num_workers=4,
+            num_workers=8,
             persistent_workers=True,
-            multiprocessing_context="spawn"
+            multiprocessing_context="spawn",
         )
 
     def val_dataloader(self):
         return torch.utils.data.DataLoader(
             self.val_ds,
             batch_size=self.batch_size,
+            shuffle=False,
+            num_workers=2,
+            persistent_workers=True,
+            multiprocessing_context="spawn"
         )
 
 

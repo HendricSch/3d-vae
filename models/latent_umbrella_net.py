@@ -1,5 +1,5 @@
 from models.autoencoder import Autoencoder
-from models.predictionnet import PredictionModel
+from models.predictionnet import PredictionModel, AFNOPredictionModel
 from models.blocks.distributions import DiagonalGaussianDistribution
 
 import torch.nn as nn
@@ -11,7 +11,7 @@ import yaml
 
 class LatentUmbrellaNet(nn.Module):
     def __init__(
-        self, *, vae_ckpt_path: str, vae_config_path: str, prediction_net_ckpt_path: str, device: str
+        self, *, vae_ckpt_path: str, vae_config_path: str, prediction_net_type: str, prediction_net_ckpt_path: str, device: str
     ):
         super(LatentUmbrellaNet, self).__init__()
 
@@ -26,11 +26,19 @@ class LatentUmbrellaNet(nn.Module):
         ).to(device)
         self.vae.freeze()
 
-        # Load the prediction model from the checkpoint and freeze its parameters
-        self.prediction_net: PredictionModel = PredictionModel.load_from_checkpoint(
-            prediction_net_ckpt_path, strict=False
-        ).to(device)
-        self.prediction_net.freeze()
+        if prediction_net_type == "afno":
+            # Load the prediction model from the checkpoint and freeze its parameters
+            self.prediction_net: AFNOPredictionModel = AFNOPredictionModel.load_from_checkpoint(
+                prediction_net_ckpt_path, strict=False
+            ).to(device)
+            self.prediction_net.freeze()
+
+        elif prediction_net_type == "unet":
+            # Load the prediction model from the checkpoint and freeze its parameters
+            self.prediction_net: PredictionModel = PredictionModel.load_from_checkpoint(
+                prediction_net_ckpt_path, strict=False
+            ).to(device)
+            self.prediction_net.freeze()
 
     @staticmethod
     def normalize_input(x: torch.Tensor) -> torch.Tensor:
@@ -347,10 +355,11 @@ class LatentUmbrellaNet(nn.Module):
         return x_denorm
 
     @torch.no_grad()
-    def forward(self, x_1: torch.Tensor, x_2: torch.Tensor) -> torch.Tensor:
+    def forward(self, x_1: torch.Tensor, x_2: torch.Tensor, forecast_steps: int = 1) -> torch.Tensor:
 
-        x_1 = x_1[:, :, :, :-1]
-        x_2 = x_2[:, :, :, :-1]
+        if x_1.shape == (1, 69, 1440, 721):
+            x_1 = x_1[:, :, :, :-1]
+            x_2 = x_2[:, :, :, :-1]
 
         x_1 = x_1.to(self.device)
         x_2 = x_2.to(self.device)
@@ -370,7 +379,10 @@ class LatentUmbrellaNet(nn.Module):
             moments = torch.cat([moments_x_1, moments_x_2], dim=1)
 
             # Pass the moments through the prediction network to get the next prediction
-            pred = self.prediction_net.forward(moments)
+            for i in range(forecast_steps):
+                pred = self.prediction_net.forward(moments)
+                _, prev_moments_2 = moments.chunk(2, dim=1)
+                moments = torch.cat([prev_moments_2, pred], dim=1)
 
             z = DiagonalGaussianDistribution(pred).sample()
 

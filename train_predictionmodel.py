@@ -1,37 +1,42 @@
 import torch
 import torch.nn as nn
 import lightning
-from lightning.pytorch.callbacks import ModelCheckpoint
+from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateMonitor
 
 from data.latents import LatentsDataModule
-from models.predictionnet import PredictionModel, DummyModel
+from models.predictionnet import PredictionModel, AFNOPredictionModel
 
 
 def main():
 
     torch.set_float32_matmul_precision("medium")
 
-    data = LatentsDataModule(batch_size=2)
+    data = LatentsDataModule(batch_size=16)
 
-    model = PredictionModel()
+    # model = PredictionModel()
+    # model = PredictionModel.load_from_checkpoint(
+    #     "checkpoints/prediction-model-001278-val-loss.ckpt")
     # model = DummyModel()
+    model = AFNOPredictionModel.load_from_checkpoint(
+        "checkpoints/prediction-model-afno-val_loss=0.01606.ckpt")
 
-    # checkpoint_callback = ModelCheckpoint(
-    #     dirpath="checkpoints/",
-    #     filename=config["config"]["general"]["name"] + "-{step}",
-    #     every_n_train_steps=2500,
+    checkpoint_callback = ModelCheckpoint(
+        dirpath="checkpoints/",
+        filename="prediction-model-afno-{val_loss:.5f}",
+        monitor="val_loss",
+        mode="min",
+        save_top_k=1,
+    )
 
-    # )
+    lr_monitor = LearningRateMonitor(logging_interval="step")
 
     trainer = lightning.Trainer(
-        max_epochs=-1,
+        max_epochs=4,
         precision="16-mixed",
+        callbacks=[checkpoint_callback, lr_monitor]
     )
 
     trainer.fit(model, datamodule=data)
-
-    # save the model
-    trainer.save_checkpoint("checkpoints/prediction_model_moments.ckpt")
 
 
 if __name__ == '__main__':

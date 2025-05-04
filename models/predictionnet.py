@@ -1,10 +1,10 @@
 import torch
 import math
 import lightning as pl
+from models.afnonet import AFNONet
 
 
 class DummyModel(pl.LightningModule):
-
     def __init__(self):
         super().__init__()
 
@@ -61,11 +61,102 @@ class DummyModel(pl.LightningModule):
     def configure_optimizers(self):
         lr = 4e-3
 
-        optimizer = torch.optim.AdamW(
-            self.parameters(), lr=lr
-        )
+        optimizer = torch.optim.AdamW(self.parameters(), lr=lr)
 
         return optimizer
+
+
+class AFNOPredictionModel(pl.LightningModule):
+    def __init__(self):
+        super().__init__()
+
+        self.afno = AFNONet(
+            img_size=(192, 96), patch_size=(8, 8), in_chans=256, out_chans=128, num_blocks=8
+        )
+
+        self.pad = PadBlock((3, 3, 6, 6))
+        self.unpad = UnPadBlock((3, 3, 6, 6))
+
+        self.learning_rate = 0.0005
+        self.save_hyperparameters()
+        self.example_input_array = torch.zeros(8, 256, 180, 90)
+
+        self.loss_fn = torch.nn.MSELoss()
+
+        self.val_losses = []
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.pad(x)
+
+        x = self.afno.forward(x)
+
+        x = self.unpad(x)
+
+        return x
+
+    def training_step(self, batch: torch.Tensor, batch_idx):
+        x_1, x_2, y = batch
+
+        x = torch.cat([x_1, x_2], dim=1)
+
+        prediction = self.forward(x)
+
+        loss = self.loss_fn.forward(prediction, y)
+
+        self.log("train_loss", loss.item(), prog_bar=True)
+
+        return loss
+
+    def validation_step(self, batch: torch.Tensor, batch_idx):
+        x_1, x_2, y = batch
+
+        x = torch.cat([x_1, x_2], dim=1)
+
+        prediction = self.forward(x)
+
+        loss = self.loss_fn.forward(prediction, y)
+
+        self.val_losses.append(loss.item())
+
+    def on_validation_epoch_end(self):
+        losses = torch.tensor(self.val_losses)
+
+        # remove nan values
+        losses = losses[~torch.isnan(losses)]
+
+        # remove inf values
+        losses = losses[~torch.isinf(losses)]
+
+        avg_loss = torch.mean(losses)
+
+        self.log("val_loss", avg_loss, prog_bar=True)
+
+        self.val_losses = []
+
+    def configure_optimizers(self):
+        lr = self.learning_rate
+
+        optimizer = torch.optim.AdamW(self.parameters(), lr=lr)
+
+        # lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
+        #     optimizer=optimizer,
+        #     total_steps=6000,
+        #     max_lr=lr,
+        # )
+
+        lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer=optimizer,
+            T_max=6000,
+            eta_min=0,
+        )
+
+        lr_scheduler_config = {
+            "scheduler": lr_scheduler,
+            "interval": "step",
+            "frequency": 1,
+        }
+
+        return {"optimizer": optimizer, "lr_scheduler": lr_scheduler_config}
 
 
 class PredictionModel(pl.LightningModule):
@@ -134,9 +225,7 @@ class PredictionModel(pl.LightningModule):
     def configure_optimizers(self):
         lr = self.learning_rate
 
-        optimizer = torch.optim.AdamW(
-            self.parameters(), lr=lr
-        )
+        optimizer = torch.optim.AdamW(self.parameters(), lr=lr)
 
         return optimizer
 

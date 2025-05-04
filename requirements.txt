@@ -11,3 +11,5 @@ xbatcher
 zarr
 gcsfs
 tensorboard
+timm
+einops
