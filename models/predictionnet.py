@@ -172,7 +172,7 @@ class PredictionModel(pl.LightningModule):
             pads=(3, 3, 6, 6),
         )
 
-        self.learning_rate = 3e-4
+        self.learning_rate = 5e-6
         self.save_hyperparameters()
         self.example_input_array = torch.zeros(8, 256, 180, 90)
 
@@ -227,7 +227,19 @@ class PredictionModel(pl.LightningModule):
 
         optimizer = torch.optim.AdamW(self.parameters(), lr=lr)
 
-        return optimizer
+        lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer=optimizer,
+            T_max=11300,
+            eta_min=0,
+        )
+
+        lr_scheduler_config = {
+            "scheduler": lr_scheduler,
+            "interval": "step",
+            "frequency": 1,
+        }
+
+        return {"optimizer": optimizer, "lr_scheduler": lr_scheduler_config}
 
 
 class ResBlock(torch.nn.Module):

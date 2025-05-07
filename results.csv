@@ -1,0 +1,8 @@
+forecast_step,persistence,lun_unet,lun_fourcastnet
+0, 0
+1, 220.11, 0, 0
+2, 351.61, 0, 0
+3, 449.54, 0, 0
+4, 523.24, 0, 0
+5, 606.83, 0, 0
+6, 655.43, 0, 0

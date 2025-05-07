@@ -395,6 +395,27 @@ class LatentUmbrellaNet(nn.Module):
 
         return output
 
+    @torch.no_grad()
+    def encode_decode(self, x: torch.Tensor) -> torch.Tensor:
+
+        if x.shape == (1, 69, 1440, 721):
+            x = x[:, :, :, :-1]
+
+        x = x.to(self.device)
+
+        # Normalize the input data
+        x = self.normalize_input(x)
+
+        # Pass the input through the VAE model
+        with torch.autocast(device_type=self.device, dtype=torch.float16):
+            dec, _ = self.vae.forward(x)
+
+        # Denormalize the output data
+        output = dec.to(torch.float32).detach().cpu()
+        output = self.denormalize_input(output)
+
+        return output
+
 
 if __name__ == "__main__":
     x_1 = torch.randn(1, 69, 1440, 721)

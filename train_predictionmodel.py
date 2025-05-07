@@ -11,18 +11,18 @@ def main():
 
     torch.set_float32_matmul_precision("medium")
 
-    data = LatentsDataModule(batch_size=16)
+    data = LatentsDataModule(batch_size=2)
 
     # model = PredictionModel()
-    # model = PredictionModel.load_from_checkpoint(
-    #     "checkpoints/prediction-model-001278-val-loss.ckpt")
+    model = PredictionModel.load_from_checkpoint(
+        "checkpoints/prediction-model-val_loss=0.01241.ckpt")
     # model = DummyModel()
-    model = AFNOPredictionModel.load_from_checkpoint(
-        "checkpoints/prediction-model-afno-val_loss=0.01606.ckpt")
+    # model = AFNOPredictionModel.load_from_checkpoint(
+    #     "checkpoints/prediction-model-afno-val_loss=0.01606.ckpt")
 
     checkpoint_callback = ModelCheckpoint(
         dirpath="checkpoints/",
-        filename="prediction-model-afno-{val_loss:.5f}",
+        filename="prediction-model-{val_loss:.5f}",
         monitor="val_loss",
         mode="min",
         save_top_k=1,
@@ -31,7 +31,7 @@ def main():
     lr_monitor = LearningRateMonitor(logging_interval="step")
 
     trainer = lightning.Trainer(
-        max_epochs=4,
+        max_epochs=1,
         precision="16-mixed",
         callbacks=[checkpoint_callback, lr_monitor]
     )
