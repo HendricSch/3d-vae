@@ -1,19 +1,84 @@
+# FONT
 font.size: 8
-font.family: STIXGeneral
-mathtext.fontset: stix
+font.family: STIXGeneral # Gute Wahl, alternativ 'Arial' oder 'Helvetica' prüfen, falls von Nature bevorzugt
+mathtext.fontset: stix   # Konsistent mit der Hauptschriftart
 
-figure.figsize: 5.9, 4
+# FIGURE
+# Nature Spaltenbreiten:
+# Einspaltig: 89mm  (ca. 3.5 inches)
+# Zweispaltig: 183mm (ca. 7.2 inches)
+# Wähle eine passende Breite und passe die Höhe entsprechend an.
+# Beispiel für einspaltig (Breite 89mm, Höhe nach Bedarf, z.B. 60mm für ein Seitenverhältnis von ca. 3:2)
+figure.figsize: 7.2, 4.8 # (Breite in Zoll, Höhe in Zoll) -> 89mm / 25.4, 60mm / 25.4
+# figure.figsize: 5.9, 4    # Deine ursprüngliche Größe, ggf. anpassen
 
+# LAYOUT
+# constrained_layout oder tight_layout sind oft nützlich, um Überlappungen zu vermeiden.
+# Nature-Plots sind oft sehr kompakt. Experimentiere mit den Werten.
+figure.autolayout: True     # Alternative zu constrained_layout, oft einfacher
 # figure.constrained_layout.use: True
-# figure.constrained_layout.h_pad: 0.005
-# figure.constrained_layout.w_pad: 0.005
-# figure.constrained_layout.hspace: 0.005
-# figure.constrained_layout.wspace: 0.005
+# figure.constrained_layout.h_pad: 0.04 # Ggf. anpassen
+# figure.constrained_layout.w_pad: 0.04 # Ggf. anpassen
+# figure.constrained_layout.hspace: 0.02
+# figure.constrained_layout.wspace: 0.02
 
+# AXES
+axes.linewidth: 0.5          # Dicke der Achsenlinien (Spines)
+axes.prop_cycle: cycler('color', ['0077BB','33BBEE', '009988', 'EE7733', 'CC3311', 'EE3377', 'BBBBBB']) # Deine Palette
+axes.labelcolor: k           # Achsenbeschriftungsfarbe (schwarz)
+axes.edgecolor: k            # Achsenlinienfarbe (schwarz)
+axes.titlepad: 3             # Abstand des Titels zur Achse
+axes.titlesize: 8            # Schriftgröße des Titels, oft gleich wie font.size
+axes.labelsize: 8            # Schriftgröße der Achsenbeschriftungen
+axes.labelpad: 3             # Abstand der Achsenbeschriftung zur Achse
+
+# GRIDS
+axes.grid: True              # Falls Gitterlinien gewünscht sind
+grid.color: cccccc         # Farbe der Gitterlinien (hellgrau)
+grid.linestyle: -            # Stil der Gitterlinien (durchgezogen)
+grid.linewidth: 0.3          # Dicke der Gitterlinien
+
+# TICKS
 xtick.direction: out
 ytick.direction: out
+xtick.major.size: 3          # Länge der Haupt-Ticks
+xtick.minor.size: 1.5        # Länge der Neben-Ticks
+ytick.major.size: 3
+ytick.minor.size: 1.5
+xtick.major.width: 0.5       # Dicke der Haupt-Ticks
+xtick.minor.width: 0.5       # Dicke der Neben-Ticks
+ytick.major.width: 0.5
+ytick.minor.width: 0.5
+xtick.labelsize: 8           # Schriftgröße der Tick-Beschriftungen
+ytick.labelsize: 8
+xtick.color: k               # Farbe der Ticks und Tick-Beschriftungen
+ytick.color: k
+xtick.major.pad: 2           # Abstand der Tick-Beschriftung zum Tick
+ytick.major.pad: 2
 
-axes.prop_cycle: cycler('color', ['0077BB','33BBEE', '009988', 'EE7733', 'CC3311', 'EE3377', 'BBBBBB'])
+# Um Ticks auf allen Seiten anzuzeigen (optional, oft bei Nature gesehen):
+# xtick.top: True
+# ytick.right: True
+# Um nur linke und untere Spines zu behalten (moderne Alternative):
+axes.spines.top: False
+axes.spines.right: False
 
+# LINES
+lines.linewidth: 1.0         # Standard-Liniendicke für Plots
+lines.markersize: 1          # Standard-Markergröße
+
+# LEGEND
 legend.frameon: False
 legend.fontsize: 8
+legend.labelspacing: 0.3     # Abstand zwischen den Legendeneinträgen
+legend.handletextpad: 0.5    # Abstand zwischen Symbol und Text in der Legende
+legend.borderaxespad: 0.5    # Abstand der Legende zu den Achsen
+
+# SAVING FIGURES (Wichtig für Publikationsqualität)
+savefig.dpi: 300             # Standardauflösung beim Speichern
+savefig.format: pdf          # Bevorzugtes Format für Vektorgrafiken
+savefig.bbox: tight          # Schneidet die Abbildung eng zu
+savefig.pad_inches: 0.02     # Kleiner Rand beim Speichern mit bbox=tight
+
+# MATH TEXT (bereits vorhanden und gut)
+mathtext.fontset: stix
