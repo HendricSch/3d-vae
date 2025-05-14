@@ -24,7 +24,7 @@ def eval_persistence(
 ) -> pd.DataFrame:
     dfs: list[pd.DataFrame] = []
 
-    for i in range(rounds):
+    for i in tqdm(range(rounds)):
         # create a thread pool for parallel processing
         pool = ThreadPool(NUM_WORKERS)
 
