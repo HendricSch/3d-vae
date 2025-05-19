@@ -1,0 +1,77 @@
+Titel: „LatentUmbrellaNet: Medium-Range Weather Forecasting via Transformer-Based Sequence Prediction in a Vector-Quantized Latent Space“
+
+1. Gutachter: Prof. Dr. Michael Wand
+2. Gutachter: Prof. Dr. Ulrich Schwanecke
+
+Gliederung Masterarbeit:
+
+- Abstract (sowohl Deutsch, als auch Englisch)
+
+- Einleitung
+
+-- Wofür braucht man Medium-ranged Weatherforcasting? In welchen Bereichen ist es sinnvoll und notwendig?
+-- Wieso geht der Trend zu datengetriebenen Modellen? Wo liegt der Vorteil? zb. hohe Rechenkosten von numerischen Modellen und daher schlechter Einsatz von Ensemble Berechnungen.
+-- Welche Durchbrüche wurden die letzten Jahre bei datengetriebenen und ML Modellen erzielt?
+-- Welches Problem teilen sich die ganzen Modelle? Sehr sehr große Datenmengen / Trainingsdaten
+-- Forschungsfrage: Ist es möglich autoregressive Wettervorhersagen in einem vortrainierten, kompremierten latenten Raum durchzuführen, um dadurch die benötigte Rechenleistung zu minimieren?
+-- Aufbau der Arbeit beschreiben
+
+- Verwandte Arbeiten
+
+-- Weyn et al., die ersten Ansätze datengetriebenen DL Modelle für Medium-ranged Weatherforcasting zu erstellen
+-- FourCastNet, erstes hochauflösendes Modell, welches mit IFS HRES konkuriert
+-- Graphcast, SOTA Lösung für Medium-ranged Weatherforcasting
+-- Stable Diffusion, die Idee, die eigentliche Modellvorhersage in einem kompremierten latenten Raum zu machen, um sehr viel Rechenresourcen zu sparen
+
+
+- Grundlagen
+
+-- Wetterforschung:
+-- Weather Forcasting
+-- Wetterdaten messen, Data Assimilation, Erstellung von Analyse und Reanalyse Daten.
+-- IFS Modell
+
+-- Deep Learning:
+-- VAE & VQ-VAE
+-- Latenter Raum
+-- Attention, Self-Attention, Cross-Attention
+-- AFNO Architektur
+-- GAN und Diskriminator Architektur
+
+
+- Methodik
+
+-- Grundidee von LatentUmbrellaNet, Kombination aus pre-trained VAE und PredictionNet. 
+-- Data Preprocessing, Auswahl der Atmosphärischen Variablen, Problematik der Datengröße, Streamen der Daten aus dem Google Storage Bucket
+-- Die Auswahl zwei ERA5 Subsets, kleiner 2D Datensatz mit 64x128 auf 5 Variablen und großer 3D Datensatz mit nativer Auflösung von 721x1440 und 69 Variablen.
+-- Normalisierung und Standardisierung der Daten. Problem bei der Berechnung des Means und der Std, da die Daten zu groß sind.
+-- Verschiedenen Ansätze der Normalisierung, entweder Featureweise oder Fieldweise, lineare oder log-Skalar für die spezifische Luftfeuchtigkeit
+-- Den Modellaufbau von der VAE und der VQ-VAE Architektur zeigen und den Unterschied (im Bottleneck) der beiden Ansätze erklären
+-- Das Trainingsobjectiv (Loss-Funktion) für den gewählten VAE und VQ-VAE beschreiben, Verhältnis von Rec-Loss zu KL-Loss, warum im Gegensatz zu Stable Diffusion kein Perceptual Loss genommen wurde, die Hinzunahme des Diskriminator Losses
+-- Pre-Training und Fine-tuning des Autoencoders, zunächst langes Training ohne Diskriminator und dann Fine-Tuning mit Diskriminator. Der benutze Optimizer, lr-scheduling, learning-rate, batch-size und so...
+-- Das PredictionNet vorstellen, Wie ist das Unet aufgebaut, welche Blöcke enthält es, wo wird die Self-Attention eingesetzt, Padding und Unpadding der Daten
+-- Was wird genau durch das PredictionNet vorhergesagt? Bei Stable Diffusion wird das gesampelte z vorhergesagt, aber bei LatentUmbrellaNet funktioniert dieser Ansatz nicht, da das Netzwerk nicht in der Lage die zufällig verteilte Variable zubestimmen, daher wird der mean und die standartabweischung autoregresiv vorhergesagt.
+-- Was wird in das Netzwerk reingegeben? Es wird die latente Darstellung (Mean + std) des aktuellen Wetters und des Wetters vor 6 Stunden in das PredictionNet reingegeben. Darauß wird die latente Darstellung für 6 Stunden in die Zukunf bestimmt. Warum werden zwei Zeitpunkte für die Vorhersage genommen? Ich glaube das wird in dem Graphcast Paper beschrieben.
+-- Wie läuft das Training des PredictionNet ab? Wie wird zunächst der latente Datensatz von Era5 berechnet und lokal gespeichert (in float16 um Speicherplatz zu sparen)? Wie wird dann das Modell trainiert? Hyperparameter wahl, Optimizer, Lr-Scheduler, ...
+-- Wie wurde Sequence-Prediction in Fine-Tuning eingesetzt, um die Leistung des PredictionNets zu verbessern, ähnlich wie bei Graphcast?
+Vergleichsarchitektur im latenten Raum: Training des AFNO-Modells (basierend auf der FourCastNet-Implementierung) auf den latenten Repräsentationen der VAE/VQ-VAE.
+
+- Evaluation und Ergebnise
+
+-- Weatherbench 2, RMSE, weighted-RMSE, ACC
+-- Vergleich der verschiedenen Autoencoder
+-- Ergebnisse des RMSE für verschiedenen Vorhersagezeiträume
+-- FourCastNet im latenten Raum und ohne Latenten Raum.
+-- Trainingszeit, Rechenresourcen und Inferenzzeit von aktuellen Modellen und LUN
+-- Hyperparametervergleich bei Autoencodern und PredictionNets
+-- Zeigen, welcher Detailgrad durch das Encoden + Decoden verloren geht, hierbei mehrere Bilder, welche GroundTruth Daten zeigen und die selben Daten welche einmal encoded und decoded wurden.
+
+- Limitationen
+
+-- Funktioniert auf dem kleinen Datensatz in niedriger Auflösung und nur einem Höhenlevel, aber nicht mehr gut auf dem großen Datensatz mit 721x1440 Auflösung und 13 Höhenleveln.
+
+- Ausblick
+
+-- VAE besser auf 3D Daten zuschneiden, z.b. Ansätze aus der Molekularforschung betrachten.
+
+- Fazit
