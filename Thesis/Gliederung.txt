@@ -54,7 +54,8 @@ Gliederung Masterarbeit:
 -- Was wird in das Netzwerk reingegeben? Es wird die latente Darstellung (Mean + std) des aktuellen Wetters und des Wetters vor 6 Stunden in das PredictionNet reingegeben. Darauß wird die latente Darstellung für 6 Stunden in die Zukunf bestimmt. Warum werden zwei Zeitpunkte für die Vorhersage genommen? Ich glaube das wird in dem Graphcast Paper beschrieben.
 -- Wie läuft das Training des PredictionNet ab? Wie wird zunächst der latente Datensatz von Era5 berechnet und lokal gespeichert (in float16 um Speicherplatz zu sparen)? Wie wird dann das Modell trainiert? Hyperparameter wahl, Optimizer, Lr-Scheduler, ...
 -- Wie wurde Sequence-Prediction in Fine-Tuning eingesetzt, um die Leistung des PredictionNets zu verbessern, ähnlich wie bei Graphcast?
-Vergleichsarchitektur im latenten Raum: Training des AFNO-Modells (basierend auf der FourCastNet-Implementierung) auf den latenten Repräsentationen der VAE/VQ-VAE.
+-- Vergleichsarchitektur im latenten Raum: Training des AFNO-Modells (basierend auf der FourCastNet-Implementierung) auf den latenten Repräsentationen der VAE/VQ-VAE.
+
 
 - Evaluation und Ergebnise
 
@@ -66,9 +67,13 @@ Vergleichsarchitektur im latenten Raum: Training des AFNO-Modells (basierend auf
 -- Hyperparametervergleich bei Autoencodern und PredictionNets
 -- Zeigen, welcher Detailgrad durch das Encoden + Decoden verloren geht, hierbei mehrere Bilder, welche GroundTruth Daten zeigen und die selben Daten welche einmal encoded und decoded wurden.
 
+
 - Limitationen
 
 -- Funktioniert auf dem kleinen Datensatz in niedriger Auflösung und nur einem Höhenlevel, aber nicht mehr gut auf dem großen Datensatz mit 721x1440 Auflösung und 13 Höhenleveln.
+-- ERA5 als Ground truth: (Abschnitt 6.1 in Weatherbench 2) Era5 ist selbst nur eine Modell Simulation und gibt eine Nährung an die eigentliche Beobachtungen an, aber bei vielen Variablen, z.B. dem Niederschlag, können die Werte stark voneinander abweischen.
+-- Unrealisitsche Forecasts: (Abschnitt 6.2 in Weatherbench 2) Für lange Lead Times neigen die Modelle dazu, ein Mittelwert über mögliche Vorhersagen zu berechnen, dieser Mittelwert ist jedoch oft kein realistischer Zustand an sich, obwohl dieser gute Ergebnisse bei RMSE und ACC erreicht.
+
 
 - Ausblick
 
